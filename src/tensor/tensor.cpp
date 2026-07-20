@@ -190,8 +190,8 @@ tensor_t Tensor::permute(const std::vector<size_t> &order) const {
 }
 
 tensor_t Tensor::view(const std::vector<size_t> &shape) const {
-    size_t old_numel = this->numel();
     size_t new_numel = std::accumulate(shape.begin(), shape.end(), size_t{1}, [](size_t res, size_t val) { return res * val; });
+    size_t old_numel = this->numel();
     std::vector<ptrdiff_t> new_strides(shape.size());
     bool compatible = true;
     if(old_numel!=new_numel)
