@@ -178,7 +178,7 @@ tensor_t Tensor::permute(const std::vector<size_t> &order) const {
     std::vector<size_t> new_shape(this->shape().size());
     std::vector<ptrdiff_t> new_strides(this->shape().size());
     size_t dim = order.size()-1;
-    for (int i = 0; i <=dim; i++) {
+    for (size_t i = 0; i <=dim; i++) {
         new_shape[i] = this->shape()[order[i]];
         new_strides[i] = this->strides()[order[i]];
     }

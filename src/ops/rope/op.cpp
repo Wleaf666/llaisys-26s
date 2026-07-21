@@ -1,7 +1,34 @@
 #include "op.hpp"
 
+#include "../../core/llaisys_core.hpp"
+#include "../../utils.hpp"
+#include "cpu/rope_cpu.hpp"
+
 namespace llaisys::ops {
 void rope(tensor_t out, tensor_t in, tensor_t pos_ids, float theta) {
-    TO_BE_IMPLEMENTED();
+    CHECK_SAME_DEVICE(out, in, pos_ids);
+    CHECK_SAME_DTYPE(out->dtype(), in->dtype());
+    CHECK_SAME_SHAPE(out->shape(), in->shape());
+    CHECK_ARGUMENT(pos_ids->dtype() == LLAISYS_DTYPE_I64, "RoPE: position IDs must have I64 dtype.");
+    CHECK_ARGUMENT(in->ndim() == 3 && pos_ids->ndim() == 1 && pos_ids->shape()[0] == in->shape()[0],
+                   "RoPE: expected [sequence, heads, head_dim] input and one position ID per token.");
+    CHECK_ARGUMENT(in->shape()[2] % 2 == 0, "RoPE: head dimension must be even.");
+    ASSERT(out->isContiguous() && in->isContiguous() && pos_ids->isContiguous(),
+           "RoPE: all tensors must be contiguous.");
+    if (out->deviceType() == LLAISYS_DEVICE_CPU) {
+        return cpu::rope(out->data(), in->data(), pos_ids->data(), out->dtype(), in->shape()[0], in->shape()[1], in->shape()[2], theta);
+    }
+    core::context().setDevice(out->deviceType(), out->deviceId());
+    switch (out->deviceType()) {
+    case LLAISYS_DEVICE_CPU:
+        return cpu::rope(out->data(), in->data(), pos_ids->data(), out->dtype(), in->shape()[0], in->shape()[1], in->shape()[2], theta);
+#ifdef ENABLE_NVIDIA_API
+    case LLAISYS_DEVICE_NVIDIA:
+        TO_BE_IMPLEMENTED();
+        return;
+#endif
+    default:
+        EXCEPTION_UNSUPPORTED_DEVICE;
+    }
 }
 } // namespace llaisys::ops
