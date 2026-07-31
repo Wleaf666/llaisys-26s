@@ -88,3 +88,6 @@ htmlcov/
 Thumbs.db
 ehthumbs.db
 desktop.ini
+
+# Local learning notes
+/ASSIGNMENT3_TODO_ZN.md
