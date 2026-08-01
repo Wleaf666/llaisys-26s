@@ -41,6 +41,10 @@ private:
     int _ndevice;
     size_t _past_len;
 
+    size_t _cache_capacity;
+    std::vector<tensor_t> _k_cache;
+    std::vector<tensor_t> _v_cache;
+
 public:
     Qwen2Model(const Qwen2Meta &meta, llaisysDeviceType_t device, int device_id, int ndevice);
     ~Qwen2Model() = default;

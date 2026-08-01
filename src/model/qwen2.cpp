@@ -89,9 +89,23 @@ namespace llaisys::model {
             _weights.mlp_up_w[layer] = make_tensor({_meta.di, _meta.hs});
             _weights.mlp_down_w[layer] = make_tensor({_meta.hs, _meta.di});
         }
+
+        _k_cache.resize(_meta.nlayer);
+        _v_cache.resize(_meta.nlayer);
+        _cache_capacity = _meta.maxseq;
+
+        for (size_t layer = 0; layer < _meta.nlayer;layer++)
+        {
+            _k_cache[layer] = Tensor::create({_cache_capacity, _meta.nkvh, _meta.dh},_meta
+            .dtype,_device,_device);
+            _v_cache[layer] = Tensor::create({_cache_capacity, _meta.nkvh, _meta.dh}, _meta.dtype, _device, _device);
+        }
     }
     int64_t Qwen2Model::infer(int64_t *token_ids, size_t ntoken)
     {
+        const size_t old_past_len = _past_len;
+        const size_t total_len = old_past_len + ntoken;
+
         auto input_ids = Tensor::create({ntoken}, LLAISYS_DTYPE_I64, _device, _device_id);
         input_ids->load(token_ids);
 
@@ -133,11 +147,20 @@ namespace llaisys::model {
             ops::rope(q_rotated, q, tensor_pos_ids, _meta.theta);
             ops::rope(k_rotated, k, tensor_pos_ids, _meta.theta);
 
+            auto k_destination = _k_cache[layer]->slice(0, old_past_len, total_len);
+            auto v_destination = _v_cache[layer]->slice(0, old_past_len, total_len);
+
+            k_destination->load(k_rotated->data());
+            v_destination->load(v->data());
+
+            auto all_k = _k_cache[layer]->slice(0, 0, total_len);
+            auto all_v = _v_cache[layer]->slice(0, 0, total_len);
+
             float scales = 1.0f / std::sqrt(static_cast<float>(_meta.dh));
 
             tensor_t attn_value = Tensor::create({ntoken, _meta.nh,_meta.dh}, _meta.dtype, _device, _device_id);
 
-            ops::self_attention(attn_value, q_rotated, k_rotated, v, scales);
+            ops::self_attention(attn_value, q_rotated, all_k,all_v, scales);
 
             tensor_t attn_2d = attn_value->view({ntoken, _meta.nh * _meta.dh});
 
@@ -171,6 +194,7 @@ namespace llaisys::model {
             ops::add(hidden_after_mlp, residual, mlp_output);
             hidden = hidden_after_mlp;
         }
+        _past_len = total_len;
 
         tensor_t final_hidden = Tensor::create({ntoken, _meta.hs}, _meta.dtype, _device, _device_id);
         ops::rms_norm(final_hidden, hidden, _weights.out_norm_w, _meta.epsilon);

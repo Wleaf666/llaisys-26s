@@ -214,6 +214,7 @@ class Qwen2:
         if not self._model:
           raise RuntimeError("Qwen2 model has been closed")
         outputs = [int(token) for token in inputs]
+        current_inputs=outputs
 
         if not outputs:
           raise ValueError("inputs must not be empty")
@@ -240,13 +241,13 @@ class Qwen2:
 
         for _ in range(max_new_tokens):
           token_buffer = (
-              ctypes.c_int64 * len(outputs)
-          )(*outputs)
+              ctypes.c_int64 * len(current_inputs)
+          )(*current_inputs)
 
           next_token = LIB_LLAISYS.llaisysQwen2ModelInfer(
               self._model,
               token_buffer,
-              ctypes.c_size_t(len(outputs)),
+              ctypes.c_size_t(len(current_inputs)),
           )
           next_token = int(next_token)
 
@@ -254,5 +255,6 @@ class Qwen2:
 
           if next_token == self._meta.end_token:
               break
+          current_inputs=[next_token]
 
         return outputs
