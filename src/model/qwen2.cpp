@@ -12,6 +12,7 @@
 
 #include <stdexcept>
 #include <vector>
+#include <cmath>
 
 namespace llaisys::model {
 
