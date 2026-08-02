@@ -73,4 +73,7 @@ def load_qwen2(lib):
     ]
     lib.llaisysQwen2ModelInfer.restype=ctypes.c_int64
 
+    lib.llaisysQwen2ModelReset.restype=None
+    lib.llaisysQwen2ModelReset.argtypes=[llaisysQwen2Mdoel_t]
+
     

@@ -98,14 +98,16 @@ namespace llaisys::model {
         for (size_t layer = 0; layer < _meta.nlayer;layer++)
         {
             _k_cache[layer] = Tensor::create({_cache_capacity, _meta.nkvh, _meta.dh},_meta
-            .dtype,_device,_device);
-            _v_cache[layer] = Tensor::create({_cache_capacity, _meta.nkvh, _meta.dh}, _meta.dtype, _device, _device);
+            .dtype,_device,_device_id);
+            _v_cache[layer] = Tensor::create({_cache_capacity, _meta.nkvh, _meta.dh}, _meta.dtype, _device, _device_id);
         }
     }
     int64_t Qwen2Model::infer(int64_t *token_ids, size_t ntoken)
     {
         const size_t old_past_len = _past_len;
         const size_t total_len = old_past_len + ntoken;
+
+        CHECK_ARGUMENT(_past_len <= _cache_capacity && ntoken <= _cache_capacity - _past_len, "KVCACHE EXCEEDED");
 
         auto input_ids = Tensor::create({ntoken}, LLAISYS_DTYPE_I64, _device, _device_id);
         input_ids->load(token_ids);
@@ -211,6 +213,11 @@ namespace llaisys::model {
         ops::argmax(max_idx, max_val, logits);
 
         return *(reinterpret_cast<int64_t*>(max_idx->data()));
+    }
+
+    void Qwen2Model::reset()
+    {
+        _past_len = 0;
     }
 
 } // namespace llaisys::model

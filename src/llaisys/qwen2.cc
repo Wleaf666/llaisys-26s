@@ -128,4 +128,9 @@ __C {
     {
         return model->model->infer(token_ids, ntoken);
     }
+
+    void llaisysQwen2ModelReset(struct LlaisysQwen2Model * model)
+    {
+        model->model->reset();
+    }
 }

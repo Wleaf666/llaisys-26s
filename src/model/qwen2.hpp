@@ -51,6 +51,8 @@ public:
     const Qwen2Weights &weights() const;
     const Qwen2Meta &meta() const;
     int64_t infer( int64_t *token_ids, size_t ntoken);
+
+    void reset();
 };
 
 } // namespace llasisy::model

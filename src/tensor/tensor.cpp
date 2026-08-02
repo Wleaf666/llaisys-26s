@@ -175,6 +175,14 @@ bool Tensor::isContiguous() const {
 }
 
 tensor_t Tensor::permute(const std::vector<size_t> &order) const {
+    if(order.size()!=this->shape().size())
+        return nullptr;
+    size_t max_order = order[0];
+    for(auto it:order)
+        max_order = max_order > it ? max_order : it;
+    if(max_order>this->shape().size())
+        return nullptr;
+    
     std::vector<size_t> new_shape(this->shape().size());
     std::vector<ptrdiff_t> new_strides(this->shape().size());
     size_t dim = order.size()-1;
@@ -254,6 +262,8 @@ tensor_t Tensor::view(const std::vector<size_t> &shape) const {
         }
     }
 
+    CHECK_ARGUMENT(compatible, "can't view");
+
     TensorMeta new_meta{
         this->dtype(),
         shape,
@@ -267,6 +277,8 @@ tensor_t Tensor::view(const std::vector<size_t> &shape) const {
 }
 
 tensor_t Tensor::slice(size_t dim, size_t start, size_t end) const {
+    if(dim>this->shape().size()||start>end||end>this->shape()[dim])
+        return nullptr;
     std::vector<size_t> new_shape(this->shape());
     new_shape[dim] = end - start;
     TensorMeta new_meta{this->dtype(), new_shape, this->strides()};
